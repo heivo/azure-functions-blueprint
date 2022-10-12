@@ -1,12 +1,16 @@
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
+import { registry } from '../openapi/registry';
 import { NotFoundError } from './errors';
 
-const assetSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  serial: z.string().optional(),
-});
+export const assetSchema = registry.register(
+  'Asset',
+  z.object({
+    id: z.string().uuid().openapi({ example: randomUUID() }),
+    name: z.string().openapi({ example: 'My asset' }),
+    serial: z.string().optional().openapi({ example: 'A012345' }),
+  })
+);
 
 export type Asset = z.infer<typeof assetSchema>;
 

@@ -1,5 +1,6 @@
+import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
 import { AzureFunction, Context, HttpRequest, HttpResponse } from '@azure/functions';
-import { TypeOf, ZodArray, ZodEffects, ZodError, ZodIssue, ZodObject, ZodRawShape, ZodTypeAny } from 'zod';
+import { TypeOf, z, ZodArray, ZodEffects, ZodError, ZodIssue, ZodObject, ZodRawShape, ZodTypeAny } from 'zod';
 import {
   HttpError,
   NotAllowedError,
@@ -8,6 +9,8 @@ import {
   ValidationError,
 } from './errors';
 import { getUser, Permission, User } from './user';
+
+extendZodWithOpenApi(z);
 
 export function buildHttpTriggerFunction<
   B extends ZodObject<ZodRawShape, 'strict'> | ZodEffects<ZodObject<ZodRawShape, 'strict'>> | ZodArray<ZodTypeAny>,
