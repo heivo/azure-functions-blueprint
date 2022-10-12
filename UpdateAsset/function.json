@@ -1,0 +1,19 @@
+{
+  "bindings": [
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": ["put"],
+      "route": "v1/assets/{id}"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "$return"
+    }
+  ],
+  "scriptFile": "../dist/UpdateAsset/funcUpdateAsset.js",
+  "entryPoint": "default"
+}
