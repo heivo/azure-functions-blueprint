@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import * as path from 'path';
 
 import { extendZodWithOpenApi, OpenAPIGenerator, ResponseConfig } from '@asteasolutions/zod-to-openapi';
@@ -10,12 +9,12 @@ import { bearerAuth } from './components';
 import { registry } from './registry';
 import { OpenApiSpec } from './types';
 
-extendZodWithOpenApi(z);
+export default async function generate(): Promise<string> {
+  extendZodWithOpenApi(z);
 
-(async () => {
   const filenames = glob.sync('{,!(node_modules)/**/}*.openapi.ts');
   if (!filenames.length) {
-    throw new Error('no API spec found');
+    throw new Error('No API spec found');
   }
 
   for await (const filename of filenames) {
@@ -46,16 +45,12 @@ extendZodWithOpenApi(z);
       security: [{ [bearerAuth.name]: [] }],
     });
 
-    const fileContent = JSON.stringify(docs, null, 2);
-
-    fs.writeFileSync(`./open-api.json`, fileContent, {
-      encoding: 'utf-8',
-    });
+    return JSON.stringify(docs, null, 2);
   } catch (err) {
     console.error('Failed to generate document:', err);
     process.exit(1);
   }
-})();
+}
 
 type HttpMethod = 'get' | 'post' | 'put' | 'delete' | 'patch';
 
@@ -76,7 +71,7 @@ interface FunctionJson {
 function parseFunctionJson(functionJson: FunctionJson) {
   const httpTriggerBinding = functionJson.bindings.find(isHttpTriggerBinding);
   if (!httpTriggerBinding) {
-    throw new Error(`no http trigger binding found in ${JSON.stringify(functionJson, null, 2)}`);
+    throw new Error(`No http trigger binding found in ${JSON.stringify(functionJson, null, 2)}`);
   }
   return {
     route: httpTriggerBinding.route,
@@ -90,7 +85,7 @@ function registerSpec(route: string, method: HttpMethod, spec: OpenApiSpec) {
   validateParams(route, spec.params);
 
   if (spec.requestBody && (method === 'get' || method === 'delete')) {
-    throw new Error(`http method "${method}" does not support a request body`);
+    throw new Error(`HTTP method "${method}" does not support a request body`);
   }
 
   const responses: {
@@ -155,18 +150,18 @@ function validateParams(route: string, params: OpenApiSpec['params']) {
   const routeParams = [...route.matchAll(/{([^}]+)}/g)].map((m) => m[1]);
   if (routeParams.length) {
     if (!params) {
-      throw new Error(`route ${route} contains params but params are not defined in spec`);
+      throw new Error(`Route ${route} contains params but params are not defined in spec`);
     }
     for (const routeParam of routeParams) {
       if (!Object.keys(params).includes(routeParam)) {
-        throw new Error(`route param "${routeParam} is missing in spec`);
+        throw new Error(`Route param "${routeParam} is missing in spec`);
       }
     }
   }
   if (params) {
     for (const param of Object.keys(params)) {
       if (!routeParams.includes(param)) {
-        throw new Error(`param "${param}" is defined in spec but missing in route ${route}`);
+        throw new Error(`Param "${param}" is defined in spec but missing in route ${route}`);
       }
     }
   }
