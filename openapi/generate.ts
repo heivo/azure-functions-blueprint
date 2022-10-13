@@ -25,6 +25,8 @@ extendZodWithOpenApi(z);
     ]);
     if (typeof spec.default === 'undefined') {
       throw new Error(`${filename} has no default export`);
+    } else if (typeof spec.default !== 'object') {
+      throw new Error(`${filename} default export is not an object`);
     }
     const { route, method } = parseFunctionJson(functionJson);
     registerSpec(route, method, spec.default);
@@ -84,8 +86,12 @@ function parseFunctionJson(functionJson: FunctionJson) {
 
 function registerSpec(route: string, method: HttpMethod, spec: OpenApiSpec) {
   console.log(`adding documentation for ${method.toUpperCase()} ${route}`);
-  // TODO verify that all route params match the spec params
-  // TODO verify that requestBody is only defined when method is PUT, POST or PATCH
+
+  validateParams(route, spec.params);
+
+  if (spec.requestBody && (method === 'get' || method === 'delete')) {
+    throw new Error(`http method "${method}" does not support a request body`);
+  }
 
   const responses: {
     [statusCode: string]: ResponseConfig;
@@ -143,4 +149,25 @@ function registerSpec(route: string, method: HttpMethod, spec: OpenApiSpec) {
     },
     responses,
   });
+}
+
+function validateParams(route: string, params: OpenApiSpec['params']) {
+  const routeParams = [...route.matchAll(/{([^}]+)}/g)].map((m) => m[1]);
+  if (routeParams.length) {
+    if (!params) {
+      throw new Error(`route ${route} contains params but params are not defined in spec`);
+    }
+    for (const routeParam of routeParams) {
+      if (!Object.keys(params).includes(routeParam)) {
+        throw new Error(`route param "${routeParam} is missing in spec`);
+      }
+    }
+  }
+  if (params) {
+    for (const param of Object.keys(params)) {
+      if (!routeParams.includes(param)) {
+        throw new Error(`param "${param}" is defined in spec but missing in route ${route}`);
+      }
+    }
+  }
 }
